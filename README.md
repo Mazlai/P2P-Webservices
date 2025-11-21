@@ -1,73 +1,85 @@
-# React + TypeScript + Vite
+# PeerTea - Ynov MicroServices Project
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Eric PHILIPPE
+Mickaël FERNANDEZ
+Tillian HURE
 
-Currently, two official plugins are available:
+This repository contains all the code for the PeerTea project, a peer-to-peer web application developed as part of the Ynov MicroServices curriculum.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The website is shared between five main features:
 
-## React Compiler
+1. **Chat Application**: A real-time chat application that allows users to communicate with each other using WebRTC technology.
+2. **Room Management**: A room management system that enables users to create, join, and manage chat rooms.
+3. **Gif integration**: Integration with the Giphy API to allow users to search for and share GIFs within the chat application.
+4. **Video Calling**: A video calling feature that allows users to make video calls to each other using WebRTC.
+5. **Tic-Tac-Toe Game**: A simple Tic-Tac-Toe game that users can play against each other within the chat application.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Technologies Used
 
-## Expanding the ESLint configuration
+> The project is mainly built on the frontend side.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend**: React.ts, WebRTC, ShadCn/ui
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+> The backend server is only used for signaling and room management.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Backend**: Bun.ts
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Getting Started
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+To run the PeerTea application locally, follow these steps:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Mazlai/P2P-Webservices.git
+   cd P2P-Webservices
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+````
+
+2. Install dependencies for both frontend and backend:
+ ```bash
+ # For frontend
+ cd client
+ bun install
+
+ # For backend
+ cd ../server
+ bun install
+````
+
+3. Start the backend server:
+
+   ```bash
+   bun run start
+   ```
+
+4. Start the frontend application:
+
+   ```bash
+   cd ../client
+   bun run dev
+   ```
+
+5. Open your web browser and navigate to `http://localhost:5173` to access the PeerTea application.
+
+## Documentation
+
+When the website is reached, enter your username. From here you can copy and share your id. Like this just click on "Peers" and add your friend's id to start a chat with him.
+From the same panel, you'll be able to :
+
+- Create private message
+- Block users (You won't receive messages from them)
+- Add them in your temp friends list
+
+You can also create or join rooms to chat with multiple users at once. For public ones, you won't have to peer with people to see their messages.
+
+On a private chat, you can either start a video call or play a game of Tic-Tac-Toe with your friend.
+To send GIFs, simply click on the GIF icon in the chat input area, search for your desired GIF using the Giphy integration, and select it to send it in the chat.
+
+## Structure
+
+The whole peer logic is managed inside `peerService.ts` managing connections, calls and data channels also the TicTacToe game logic is here. Working closely with useStore.ts making the bridge between the UI and the peer connections.
+
+tictactoegame.ts contains the game logic for TicTacToe.
+
+`/components`contains all the React components and ShadCn/ui components used in the frontend and no pages since it's a single page application. (cf. App.tsx)

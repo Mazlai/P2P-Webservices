@@ -1,6 +1,12 @@
 import Peer from "peerjs";
 import type { DataConnection, MediaConnection } from "peerjs";
-import type { Message, UserStatus, Room } from "../store/useStore";
+import type {
+  Message,
+  UserStatus,
+  Room,
+  GameSession,
+  GameInvite,
+} from "../store/useStore";
 import { useStore } from "../store/useStore";
 import { useNotifications } from "../store/useNotifications";
 import { v4 as uuidv4 } from "uuid";
@@ -302,6 +308,82 @@ const handleIncomingData = (peerId: string, data: unknown) => {
         });
         store.rooms = newRooms;
       }
+      break;
+    }
+
+    case "game-invite": {
+      const invite: GameInvite = {
+        id: typedData.inviteId as string,
+        from: peerId,
+        fromUsername: typedData.fromUsername as string,
+        gameId: typedData.gameId as string,
+        timestamp: typedData.timestamp as number,
+        accepted: false,
+      };
+      store.gameInvites.set(invite.id, invite);
+      useNotifications
+        .getState()
+        .addNotification(
+          `${typedData.fromUsername} invited you to play TicTacToe!`,
+          "success"
+        );
+      break;
+    }
+
+    case "game-accept": {
+      const sessionId = typedData.sessionId as string;
+      const inviteId = typedData.inviteId as string;
+      const session: GameSession = {
+        id: sessionId,
+        gameId: typedData.gameId as string,
+        player1: typedData.player1 as string,
+        player2: typedData.player2 as string,
+        player1Symbol: typedData.player1Symbol as "X" | "O",
+        player2Symbol: typedData.player2Symbol as "X" | "O",
+        board: Array.isArray(typedData.board)
+          ? (typedData.board as Array<"X" | "O" | null>)
+          : Array(9).fill(null),
+        currentPlayer: typedData.currentPlayer as "X" | "O",
+        status: "active" as const,
+        winner: null,
+        createdAt: typedData.createdAt as number,
+        dmPeerId: peerId,
+      };
+      store.activeSessions.set(sessionId, session);
+      // Remove the invitation from the inviter's list
+      store.removeGameInvite(inviteId);
+      useNotifications
+        .getState()
+        .addNotification(
+          `${typedData.fromUsername} accepted your game invitation!`,
+          "success"
+        );
+      break;
+    }
+
+    case "game-move": {
+      const sessionId = typedData.sessionId as string;
+      const session = store.activeSessions.get(sessionId);
+      if (session) {
+        const newBoard = [...session.board];
+        const cellIndex = typedData.cellIndex as number;
+        newBoard[cellIndex] = typedData.symbol as "X" | "O";
+        store.updateGameSession(sessionId, {
+          board: newBoard,
+          currentPlayer: typedData.nextPlayer as "X" | "O",
+          status: (typedData.status as "active" | "finished") || "active",
+          winner: typedData.winner as "draw" | "x-wins" | "o-wins" | null,
+        });
+      }
+      break;
+    }
+
+    case "game-end": {
+      const sessionId = typedData.sessionId as string;
+      store.endGameSession(sessionId);
+      useNotifications
+        .getState()
+        .addNotification(`TicTacToe game ended: ${typedData.result}`, "info");
       break;
     }
   }
@@ -729,4 +811,101 @@ export const getDataConnection = (peerId: string): DataConnection | null => {
 
 export const getAllConnections = (): DataConnection[] => {
   return Array.from(dataConnections.values());
+};
+
+export const sendGameInvite = (
+  peerId: string,
+  inviteId: string,
+  gameId: string
+) => {
+  const conn = dataConnections.get(peerId);
+  if (!conn || !conn.open) {
+    console.error("Connection not open");
+    return;
+  }
+
+  const store = useStore.getState();
+  conn.send({
+    type: "game-invite",
+    inviteId,
+    gameId,
+    fromUsername: store.currentUser.username,
+    timestamp: Date.now(),
+  });
+};
+
+export const acceptGameInvite = (
+  peerId: string,
+  inviteId: string,
+  sessionId: string,
+  gameId: string,
+  player1: string,
+  player2: string
+) => {
+  const conn = dataConnections.get(peerId);
+  if (!conn || !conn.open) {
+    console.error("Connection not open");
+    return;
+  }
+
+  const store = useStore.getState();
+  conn.send({
+    type: "game-accept",
+    inviteId,
+    sessionId,
+    gameId,
+    player1,
+    player2,
+    player1Symbol: "X",
+    player2Symbol: "O",
+    currentPlayer: "X",
+    fromUsername: store.currentUser.username,
+    createdAt: Date.now(),
+  });
+};
+
+export const sendGameMove = (
+  peerId: string,
+  sessionId: string,
+  cellIndex: number,
+  symbol: "X" | "O",
+  nextPlayer: "X" | "O",
+  status: "active" | "finished",
+  winner: "draw" | "x-wins" | "o-wins" | null
+) => {
+  const conn = dataConnections.get(peerId);
+  if (!conn || !conn.open) {
+    console.error("Connection not open");
+    return;
+  }
+
+  conn.send({
+    type: "game-move",
+    sessionId,
+    cellIndex,
+    symbol,
+    nextPlayer,
+    status,
+    winner,
+    timestamp: Date.now(),
+  });
+};
+
+export const endGameSession = (
+  peerId: string,
+  sessionId: string,
+  result: string
+) => {
+  const conn = dataConnections.get(peerId);
+  if (!conn || !conn.open) {
+    console.error("Connection not open");
+    return;
+  }
+
+  conn.send({
+    type: "game-end",
+    sessionId,
+    result,
+    timestamp: Date.now(),
+  });
 };

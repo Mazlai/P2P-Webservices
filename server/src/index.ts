@@ -40,11 +40,6 @@ const server = serve({
       connectedClients.add(ws);
       console.log("Client connected. Total clients:", connectedClients.size);
 
-      // Send existing rooms to the new client
-      // Only send public rooms or we need a way to filter private ones based on auth (which we don't have yet)
-      // For now, we'll send all and let client filter or just send public ones.
-      // The user asked for "buffer broadcast", usually implies public rooms.
-
       const roomList = Array.from(rooms.values());
       ws.send(
         JSON.stringify({

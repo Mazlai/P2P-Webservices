@@ -41,6 +41,11 @@ import {
 } from "../services/peerService";
 import { NotificationContainer } from "./Notifications";
 import { VideoCall } from "./VideoCall";
+import {
+  TicTacToeGame,
+  TicTacToeInvitation,
+  SendGameInviteButton,
+} from "./TicTacToe";
 import type { UserStatus } from "../store/useStore";
 
 // Initialize Giphy with a beta key
@@ -64,6 +69,7 @@ export const ChatInterface: React.FC = () => {
     unreadRooms,
     markDirectMessagesAsRead,
     markRoomMessagesAsRead,
+    activeSessions,
   } = useStore();
 
   const { notifications, addNotification, removeNotification } =
@@ -696,6 +702,25 @@ export const ChatInterface: React.FC = () => {
       <div className="relative z-10 flex-1 flex flex-col min-h-screen lg:min-h-full bg-gradient-to-b from-black to-slate-950">
         {selectedChat ? (
           <>
+            {/* Check if there's an active game for this DM */}
+            {selectedChat.startsWith("dm-") &&
+              Array.from(activeSessions.values()).find(
+                (session) =>
+                  session.dmPeerId === selectedChat.replace("dm-", "")
+              ) && (
+                <div className="p-4 border-b border-white/10">
+                  <TicTacToeGame
+                    session={
+                      Array.from(activeSessions.values()).find(
+                        (session) =>
+                          session.dmPeerId === selectedChat.replace("dm-", "")
+                      )!
+                    }
+                    peerId={selectedChat.replace("dm-", "")}
+                  />
+                </div>
+              )}
+
             {/* Chat Header */}
             <motion.div
               initial={{ y: -50 }}
@@ -709,17 +734,43 @@ export const ChatInterface: React.FC = () => {
                 </h2>
                 <p className="text-xs text-white/40">{getChatSubtitle()}</p>
               </div>
-              {selectedChat.startsWith("dm-") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => initiateCall(selectedChat.replace("dm-", ""))}
-                  className="text-white/60 hover:text-white hover:bg-white/10"
-                >
-                  <Video className="w-5 h-5" />
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {selectedChat.startsWith("dm-") && (
+                  <>
+                    <SendGameInviteButton
+                      peerId={selectedChat.replace("dm-", "")}
+                      peerUsername={
+                        connections.get(selectedChat.replace("dm-", ""))
+                          ?.username || ""
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        initiateCall(selectedChat.replace("dm-", ""))
+                      }
+                      className="text-white/60 hover:text-white hover:bg-white/10"
+                    >
+                      <Video className="w-5 h-5" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </motion.div>
+
+            {/* Display game invitation if any */}
+            {selectedChat.startsWith("dm-") && (
+              <div className="p-4">
+                <TicTacToeInvitation
+                  peerId={selectedChat.replace("dm-", "")}
+                  peerUsername={
+                    connections.get(selectedChat.replace("dm-", ""))
+                      ?.username || ""
+                  }
+                />
+              </div>
+            )}
 
             {/* Messages Area */}
             <motion.div

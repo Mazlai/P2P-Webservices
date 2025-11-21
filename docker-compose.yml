@@ -3,7 +3,7 @@ version: "3.8"
 services:
   server:
     build:
-      context: ./packages/server
+      context: ./server
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
@@ -13,7 +13,7 @@ services:
 
   client:
     build:
-      context: ./packages/client
+      context: ./client
       dockerfile: Dockerfile
     ports:
       - "5173:5173"

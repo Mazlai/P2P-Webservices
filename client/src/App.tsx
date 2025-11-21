@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./App.css";
 import { PeerSetup } from "./components/PeerSetup";
-import { ChatInterface } from "./components/ChatInterfaceModern";
+import { ChatInterface } from "./components/ChatInterface";
 import { NotificationContainer } from "./components/Notifications";
 import { useNotifications } from "./store/useNotifications";
 

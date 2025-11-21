@@ -20,6 +20,30 @@ export interface Message {
   type: "text" | "image";
 }
 
+export interface GameInvite {
+  id: string;
+  from: string;
+  fromUsername: string;
+  gameId: string;
+  timestamp: number;
+  accepted: boolean;
+}
+
+export interface GameSession {
+  id: string;
+  gameId: string;
+  player1: string;
+  player2: string;
+  player1Symbol: "X" | "O";
+  player2Symbol: "X" | "O";
+  board: Array<"X" | "O" | null>; // Array of cells
+  currentPlayer: "X" | "O";
+  status: "pending" | "active" | "finished";
+  winner: "draw" | "x-wins" | "o-wins" | null;
+  createdAt: number;
+  dmPeerId?: string; // The peer ID for direct message games
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -100,6 +124,16 @@ interface Store {
   callState: CallState;
   setCallState: (state: Partial<CallState>) => void;
   resetCallState: () => void;
+
+  // TicTacToe Games
+  gameInvites: Map<string, GameInvite>; // Key: invite ID
+  activeSessions: Map<string, GameSession>; // Key: session ID
+  sendGameInvite: (to: string, toUsername: string) => GameInvite;
+  acceptGameInvite: (inviteId: string) => GameSession;
+  declineGameInvite: (inviteId: string) => void;
+  removeGameInvite: (inviteId: string) => void;
+  updateGameSession: (sessionId: string, session: Partial<GameSession>) => void;
+  endGameSession: (sessionId: string) => void;
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -320,4 +354,89 @@ export const useStore = create<Store>((set, get) => ({
         remoteStream: null,
       },
     })),
+
+  // TicTacToe Games
+  gameInvites: new Map(),
+
+  activeSessions: new Map(),
+
+  sendGameInvite: (_to: string, _toUsername: string) => {
+    const invite: GameInvite = {
+      id: uuidv4(),
+      from: get().currentUser.id,
+      fromUsername: get().currentUser.username,
+      gameId: uuidv4(),
+      timestamp: Date.now(),
+      accepted: false,
+    };
+    set((state) => {
+      const newInvites = new Map(state.gameInvites);
+      newInvites.set(invite.id, invite);
+      return { gameInvites: newInvites };
+    });
+    return invite;
+  },
+
+  acceptGameInvite: (inviteId: string) => {
+    const invite = get().gameInvites.get(inviteId);
+    if (!invite) throw new Error("Invite not found");
+
+    const session: GameSession = {
+      id: uuidv4(),
+      gameId: invite.gameId,
+      player1: invite.from,
+      player2: get().currentUser.id,
+      player1Symbol: "X",
+      player2Symbol: "O",
+      board: Array(9).fill(null),
+      currentPlayer: "X",
+      status: "active",
+      winner: null,
+      createdAt: Date.now(),
+      dmPeerId: invite.from,
+    };
+
+    set((state) => {
+      const newSessions = new Map(state.activeSessions);
+      newSessions.set(session.id, session);
+
+      const newInvites = new Map(state.gameInvites);
+      newInvites.delete(inviteId);
+
+      return { activeSessions: newSessions, gameInvites: newInvites };
+    });
+
+    return session;
+  },
+
+  declineGameInvite: (inviteId: string) =>
+    set((state) => {
+      const newInvites = new Map(state.gameInvites);
+      newInvites.delete(inviteId);
+      return { gameInvites: newInvites };
+    }),
+
+  removeGameInvite: (inviteId: string) =>
+    set((state) => {
+      const newInvites = new Map(state.gameInvites);
+      newInvites.delete(inviteId);
+      return { gameInvites: newInvites };
+    }),
+
+  updateGameSession: (sessionId: string, sessionUpdate: Partial<GameSession>) =>
+    set((state) => {
+      const newSessions = new Map(state.activeSessions);
+      const session = newSessions.get(sessionId);
+      if (session) {
+        newSessions.set(sessionId, { ...session, ...sessionUpdate });
+      }
+      return { activeSessions: newSessions };
+    }),
+
+  endGameSession: (sessionId: string) =>
+    set((state) => {
+      const newSessions = new Map(state.activeSessions);
+      newSessions.delete(sessionId);
+      return { activeSessions: newSessions };
+    }),
 }));
