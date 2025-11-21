@@ -1,0 +1,15 @@
+{
+  "name": "p2p-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --outfile dist/index.js"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "@types/node": "^24.10.1",
+    "typescript": "~5.9.3"
+  }
+}
